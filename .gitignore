@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Secrets
+.env
+*.key
+
+# Personal data: never commit real chats
+*.txt
+!**/data/sample_chat.txt
+*.zip
+
+# OS
+.DS_Store
+Thumbs.db
