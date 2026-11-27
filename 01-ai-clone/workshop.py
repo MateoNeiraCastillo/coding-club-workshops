@@ -246,73 +246,17 @@ def get_chat():
 
 
 # ---------------------------------------------------------------------------
-# Step 5 · Messages for the clone and the game
-# ---------------------------------------------------------------------------
-
-def save_game_moments(messages, my_name, how_many=5):
-    """Keep a few real (message, your reply) pairs for the game, and return the rest of your messages.
-
-    The clone never sees these replies, so the game is fair."""
-    moments = []
-    for previous, reply in zip(messages, messages[1:]):
-        answered_quickly = (reply["date"] - previous["date"]).total_seconds() < 3600
-        if (previous["author"] != my_name and reply["author"] == my_name and answered_quickly
-                and len(reply["text"].split()) >= 3):
-            moments.append((previous["text"], reply["text"]))
-    game_moments = random.sample(moments, min(how_many, len(moments)))
-    saved_replies = {reply for _, reply in game_moments}
-
-    candidates = [message["text"] for message in messages
-                  if message["author"] == my_name and len(message["text"].split()) >= 3
-                  and message["text"] not in saved_replies]
-    return game_moments, candidates
-
-
-# ---------------------------------------------------------------------------
 # Step 6 · Style DNA
 # ---------------------------------------------------------------------------
-
-LAUGHS = {
-    "jaja": r"\b(?:j+a+){2,}\w*",
-    "jeje": r"\b(?:j+e+){2,}\w*",
-    "jsjs": r"\b(?:j+s+){2,}\w*",
-    "haha": r"\b(?:h+a+){2,}\w*",
-    "lol": r"\blo+l\b",
-    "lmao": r"\blmf?a+o+\b",
-    "heh": r"\bhe+h\b",
-    "xd": r"\bxd+\b",
-}
-
 
 def percent(count, total):
     return round(100 * count / total) if total else 0
 
 
-def make_style_dna(messages, my_name, examples):
-    """Measure how you text and ask the AI to describe your vibe. Returns a dictionary."""
-    my_messages = [message for message in messages if message["author"] == my_name]
-    texts = [message["text"] for message in my_messages]
+def writing_habits(messages, my_name):
+    """Small details of how you write, for the prompt: capitals, punctuation and messages in a row."""
+    texts = [message["text"] for message in messages if message["author"] == my_name]
     total = len(texts)
-
-    average_words = sum(len(text.split()) for text in texts) / total
-
-    laugh_counts = Counter()
-    for text in texts:
-        for laugh, pattern in LAUGHS.items():
-            laugh_counts[laugh] += len(re.findall(pattern, text.lower()))
-    favorite_laugh = laugh_counts.most_common(1)[0][0] if sum(laugh_counts.values()) else None
-
-    word_counts = Counter()
-    phrase_counts = Counter()
-    for text in texts:
-        words = get_words(text)
-        word_counts.update(word for word in words if word not in STOP_WORDS)
-        for size in (3, 2):
-            for start in range(len(words) - size + 1):
-                phrase = words[start:start + size]
-                if not all(word in STOP_WORDS for word in phrase):
-                    phrase_counts[" ".join(phrase)] += 1
-    signature_phrase, phrase_times = phrase_counts.most_common(1)[0] if phrase_counts else (None, 0)
 
     turns = 0
     previous_author = None
@@ -321,58 +265,11 @@ def make_style_dna(messages, my_name, examples):
             turns += 1
         previous_author = message["author"]
 
-    # A new conversation starts after 1 hour of silence
-    reply_seconds = []
-    conversations = 0
-    started_by_me = 0
-    for previous, current in zip([None] + messages, messages):
-        gap = (current["date"] - previous["date"]).total_seconds() if previous else None
-        if gap is None or gap >= 3600:
-            conversations += 1
-            if current["author"] == my_name:
-                started_by_me += 1
-        elif previous["author"] != my_name and current["author"] == my_name:
-            reply_seconds.append(gap)
-
-    reply_seconds.sort()
-    median_reply = reply_seconds[len(reply_seconds) // 2] if reply_seconds else None
-    if median_reply is None:
-        reply_speed = "No replies"
-    elif median_reply < 60:
-        reply_speed = "Under 1 min"
-    else:
-        reply_speed = f"{round(median_reply / 60)} min"
-
-    if average_words < 5:
-        length = "short"
-    elif average_words < 12:
-        length = "medium"
-    else:
-        length = "long"
-
-    from google.colab import ai
-    sample = "\n".join(random.sample(examples, min(80, len(examples))))
-    vibe = ai.generate_text(
-        f"These are WhatsApp messages written by one person:\n{sample}\n\n"
-        "Describe this person's texting personality in one short, funny and honest sentence "
-        "(maximum 12 words, in English, no emojis). Only write the sentence."
-    ).strip().strip('"')
-
     return {
-        "vibe": vibe,
-        "average_words": round(average_words, 1),
-        "length": length,
-        "favorite_laugh": favorite_laugh,
         "starts_lowercase": percent(sum(1 for text in texts if text[:1].islower()), total),
         "ends_with_period": percent(sum(1 for text in texts if text.endswith(".")), total),
         "double_punctuation": percent(sum(1 for text in texts if "??" in text or "!!" in text), total),
         "messages_in_a_row": round(total / turns, 1) if turns else 1,
-        "busiest_hour": Counter(message["date"].hour for message in my_messages).most_common(1)[0][0],
-        "signature_phrase": signature_phrase,
-        "phrase_times": phrase_times,
-        "reply_speed": reply_speed,
-        "starts_conversations": percent(started_by_me, conversations),
-        "top_words": [word for word, count in word_counts.most_common(5)],
     }
 
 
@@ -383,8 +280,8 @@ def show_style_dna(style, my_name):
          f"you said it {style['phrase_times']} times"),
         ("Reply speed", style["reply_speed"], "how long you take to answer"),
         ("Starts the conversation", f"{style['starts_conversations']}%", "of the conversations in this chat"),
-        ("Favorite hour", f"{style['busiest_hour']}:00", "when you text the most"),
-        ("Message length", f"{style['average_words']} words", f"{style['length']} messages on average"),
+        ("Favorite hour", f"{style['favorite_hour']}:00", "when you text the most"),
+        ("Message length", f"{style['average_words']} words", "on average per message"),
         ("Top words", ", ".join(style["top_words"][:3]) or "None", "what you say the most"),
     ]
     html = "".join(f"""
@@ -426,10 +323,17 @@ CHARACTERS = {
 }
 
 
-def build_prompt(my_name, style, examples, extra_rules, history, new_message):
-    """Write the instructions that tell the AI how to text like you."""
-    example_lines = "\n".join(f"- {text}" for text in examples)
+def character_info(my_name):
+    """If you picked a character from the sample chat, explain who they are to the AI."""
+    if my_name not in CHARACTERS:
+        return ""
+    return (f"Who {my_name} is: {CHARACTERS[my_name]} You know their whole story and world, "
+            "so answer any question about it in character, with their real personality from the movies "
+            "and books. Don't make them nicer than they are.")
 
+
+def history_to_text(history, my_name):
+    """Turn the chat history from the chat window into text for the prompt."""
     conversation = ""
     for turn in history:
         if isinstance(turn, dict):   # newer versions of Gradio
@@ -437,39 +341,7 @@ def build_prompt(my_name, style, examples, extra_rules, history, new_message):
             conversation += f"{speaker}: {turn['content']}\n"
         else:                        # older versions: (friend, clone) pairs
             conversation += f"Friend: {turn[0]}\n{my_name}: {turn[1]}\n"
-
-    character = ""
-    if my_name in CHARACTERS:
-        character = (f"\nWho {my_name} is: {CHARACTERS[my_name]} You know their whole story and world, "
-                     "so answer any question about it in character, with their real personality from the movies "
-                     "and books. Don't make them nicer than they are.\n")
-
-    extra = f"- {extra_rules}\n" if extra_rules else ""
-
-    return f"""You are the AI clone of {my_name}. Reply to the friend exactly like {my_name} texts on WhatsApp.
-{character}
-How {my_name} texts:
-- Vibe: {style['vibe']}
-- Messages are {style['length']}, about {style['average_words']} words each
-- Favorite laugh: {style['favorite_laugh'] or 'none'}
-- Starts in lowercase in {style['starts_lowercase']}% of messages
-- Ends with a period in {style['ends_with_period']}% of messages
-- Uses ?? or !! in {style['double_punctuation']}% of messages
-- Sends about {style['messages_in_a_row']} messages in a row (put each one on a new line)
-- Favorite words: {', '.join(style['top_words']) or 'none'}
-- Signature phrase: {style['signature_phrase'] or 'none'}
-
-Real messages from {my_name}:
-{example_lines}
-
-Rules:
-- Reply in the same language {my_name} uses in the real messages.
-- Copy the length, slang and laughs. Don't use emojis unless the example messages use them. Don't sound like an assistant.
-- Only write {my_name}'s reply, nothing else.
-{extra}
-Conversation:
-{conversation}Friend: {new_message}
-{my_name}:"""
+    return conversation
 
 
 # ---------------------------------------------------------------------------
@@ -489,19 +361,6 @@ def start_chat(clone_reply, my_name):
 # ---------------------------------------------------------------------------
 # Step 9 · Real or Clone?
 # ---------------------------------------------------------------------------
-
-def prepare_game(game_moments, clone_reply):
-    """For each saved moment, ask the clone to answer and mix its answer with the real one."""
-    rounds = []
-    for friend_message, real_reply in game_moments:
-        clone_answer = clone_reply(friend_message).split("\n")[0]
-        options = [real_reply, clone_answer]
-        random.shuffle(options)
-        rounds.append({"friend": friend_message, "real": real_reply, "options": options})
-        print(f"Round {len(rounds)} ready")
-    print(f"\n{len(rounds)} rounds ready!")
-    return rounds
-
 
 def start_game(rounds, my_name):
     """Open the Real or Clone? game and print a link you can share."""
