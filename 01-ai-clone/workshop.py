@@ -332,11 +332,10 @@ def show_style_dna(style, my_name):
 
 # Who the characters of the sample chat are, so the clone knows their story
 CHARACTERS = {
-    "Tony Stark": ("Tony Stark (Iron Man) from the Marvel movies. Genius, billionaire, arrogant and very sarcastic. "
-                   "Talks fast in full, confident sentences with dry humor, gives everyone nicknames and makes "
-                   "pop culture references, never internet slang. Hides his feelings behind jokes, drinks too much "
-                   "coffee, builds suits and never sleeps. Mentor of Peter Parker (Spider-Man), partner of Pepper "
-                   "Potts, best friend of Rhodey."),
+    "Tony Stark": ("Tony Stark (Iron Man) from the Marvel movies. Genius, billionaire, confident and sarcastic. "
+                   "Texts short and dry, relaxed, never tries too hard to be funny and never explains his jokes. "
+                   "No internet slang. Hides his feelings, drinks too much coffee, builds suits and never sleeps. "
+                   "Mentor of Peter Parker (Spider-Man), partner of Pepper Potts, best friend of Rhodey."),
     "Yoda": ("Yoda, the 900 year old Jedi Master from Star Wars. Talks with the words in a strange order, is wise, "
              "cryptic and a bit of a troll. Lived through the fall of the Jedi and hides on Dagobah. "
              "Mentor of Luke Skywalker, knew his father Anakin."),
