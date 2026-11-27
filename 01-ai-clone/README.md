@@ -13,8 +13,8 @@ Then go to **File → Save a copy in Drive** and run the cells in order with **S
 ## What you build
 
 1. **Read your chat** — upload an exported WhatsApp chat, or use the sample one
-2. **Your Wrapped** — who texts the most, your top words and the hour you text the most
-3. **Your Style DNA** — a profile of how you text
+2. **Your Wrapped** — who texts the most and your top words
+3. **Your Style DNA** — your signature phrase, reply speed, who starts the conversations and your vibe according to the AI
 4. **Your AI clone** — Gemini learns your style from your real messages
 5. **Chat with your clone** — with a link you can send to your friends
 6. **Real or Clone?** — a game to see if people can tell your real replies from your clone's
