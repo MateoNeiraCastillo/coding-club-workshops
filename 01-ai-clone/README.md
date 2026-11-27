@@ -19,6 +19,8 @@ Then go to **File → Save a copy in Drive** and run the cells in order with **S
 5. **Chat with your clone** — with a link you can send to your friends
 6. **Real or Clone?** — a game to see if people can tell your real replies from your clone's
 
+Along the way you learn the basics of Python: variables, functions, lists, dictionaries, loops and conditions, with 4 small challenges. The harder code (reading WhatsApp exports, charts, the chat window) lives in [`workshop.py`](workshop.py), so the notebook stays short and easy to follow.
+
 ## What you need
 
 - A laptop and a personal Google account (18+ to use the AI part)
