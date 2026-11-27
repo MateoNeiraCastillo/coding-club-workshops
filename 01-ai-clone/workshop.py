@@ -202,40 +202,25 @@ def bar_chart(items, title, color=BLUE):
     plt.show()
 
 
-def show_messages(messages):
-    """Show a summary of the chat: how many messages, people, days and the busiest day."""
+def show_messages(messages, show_text=False, how_many=5):
+    """Show how many messages were read and who sent the first few. The text stays hidden unless show_text=True."""
     if len(messages) == 0:
         card("No messages found", "We couldn't read any messages from this file. Ask an officer for help!", RED)
         return
 
-    people = len({message["author"] for message in messages})
-    first_day = messages[0]["date"].date()
-    last_day = messages[-1]["date"].date()
-    days = (last_day - first_day).days + 1
-    busiest_day, busiest_count = Counter(message["date"].date() for message in messages).most_common(1)[0]
+    preview = ""
+    for message in messages[:how_many]:
+        if show_text:
+            body = message["text"]
+        else:
+            width = min(90, 10 + len(message["text"]) // 2)
+            body = (f"<div style='background:#D9D3C7; border-radius:6px; height:14px; width:{width}%; "
+                    f"margin-top:6px;'></div>")
+        preview += (f"<div style='margin:10px 0;'><b>{message['author']}</b> "
+                    f"<span style='color:#777; font-size:13px;'>{message['date']:%d %b %Y, %H:%M}</span><br>{body}</div>")
 
-    tiles = [
-        ("Messages", f"{len(messages):,}"),
-        ("People", f"{people}"),
-        ("Days of chat", f"{days:,}"),
-        ("Messages per day", f"{len(messages) / days:.1f}"),
-    ]
-    html = "".join(f"""
-    <div style="background:white; border-radius:12px; padding:16px; border:2px solid {INK};">
-      <div style="font-size:13px; text-transform:uppercase; letter-spacing:1px; color:#666;">{label}</div>
-      <div style="font-size:30px; font-weight:900; color:{BLUE}; margin-top:4px;">{value}</div>
-    </div>""" for label, value in tiles)
-
-    display(HTML(f"""
-    <div style="background:{CREAM}; color:{INK}; border-radius:16px; padding:24px; font-family:Arial, sans-serif; max-width:820px;">
-      <div style="font-size:30px; font-weight:900;">Your chat in numbers</div>
-      <div style="font-size:15px; color:#555; margin-bottom:16px;">From {first_day:%d %b %Y} to {last_day:%d %b %Y}</div>
-      <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:12px; margin-bottom:12px;">{html}</div>
-      <div style="background:{RED}; color:white; border-radius:12px; padding:16px 22px;">
-        <div style="font-size:13px; text-transform:uppercase; letter-spacing:1px; opacity:0.85;">Busiest day</div>
-        <div style="font-size:24px; font-weight:800; margin-top:4px;">{busiest_day:%d %B %Y}: {busiest_count} messages</div>
-      </div>
-    </div>"""))
+    note = "The first 5:" if show_text else "The first 5 (text hidden):"
+    card(f"Read {len(messages):,} messages!", f"<div style='color:#555; margin-bottom:6px;'>{note}</div>{preview}")
 
 
 def show_people(authors):
